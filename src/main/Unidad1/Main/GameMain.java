@@ -37,13 +37,13 @@ public class GameMain {
         //esperar q todos los hilos usen el for
         for (Enemy enemy : enemies) {
             try {
-                enemy.join();
+                enemy.join();   //join hace que el hilo principal (el main ) espere a que cada hilo enemigo termine
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
         //resultados
-        System.out.println("\n=== Resultados Finales ===");
+        System.out.println("\n---------- Resultados Finales ----------");
         for (Player p : players) {
             System.out.println("Jugador " + p.getName() + ": " + (p.isAlive() ? "Vivo con " + p.getHp() + " hp" : "Derrotado"));
         }
