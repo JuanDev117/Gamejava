@@ -69,8 +69,8 @@ public class ClientHandler extends Thread {
                             sendMessage("La partida ya terminó.");
                             return;
                         }
-                        opponent.hp -= 70;
-                        if (opponent.hp < 0) opponent.hp = 0; // No permitir HP negativo
+                        opponent.hp -= 20;
+                        if (opponent.hp < 0) opponent.hp = 0;
 
                         // Mensaje para el oponente
                         opponent.sendMessage(playerName + " te atacó con " + weapon + " (-70 HP, ahora tienes " + opponent.hp + ")");
