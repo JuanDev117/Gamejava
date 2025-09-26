@@ -5,7 +5,7 @@ import java.util.Scanner;
 // Cliente simple que se conecta al servidor y permite enviar comandos por consola
 public class GameClient {
     public static void main(String[] args) throws IOException {
-        String host = "10.10.9.56"; // cambiar si el server está en otra máquina
+        String host = "10.10.12.108"; // cambiar si el server está en otra máquina
         int port = 5000;
 
         Socket socket = new Socket(host, port);

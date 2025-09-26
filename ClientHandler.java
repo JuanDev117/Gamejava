@@ -1,8 +1,11 @@
+
 import java.io.*;
 import java.net.*;
 
+
 // Maneja la comunicación con un cliente (una conexión)
 public class ClientHandler extends Thread {
+    private String weapon = "Puños"; // arma por defecto
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
@@ -17,20 +20,18 @@ public class ClientHandler extends Thread {
     }
 
     public void setOpponent(ClientHandler opp) {
-    this.opponent = opp;
-    sendMessage("Tu oponente es: " + opp.getPlayerName());
-}
-
+        this.opponent = opp;
+        sendMessage("Tu oponente es: " + opp.getPlayerName());
+    }
 
     // Enviar mensaje al cliente
     public void sendMessage(String msg) {
         out.println(msg);
     }
-    
-    public String getPlayerName() {
-    return playerName;
-}
 
+    public String getPlayerName() {
+        return playerName;
+    }
 
     @Override
     public void run() {
@@ -41,26 +42,50 @@ public class ClientHandler extends Thread {
                 System.out.println("Recibido: " + line);
 
                 if (line.startsWith("NAME:")) {
-                    playerName = line.substring(5);
+                    String nombre = line.substring(5).trim();
+                    if (nombre.isEmpty()) {
+                        sendMessage("El nombre no puede estar vacío. Por favor, ingresa un nombre válido.");
+                        continue;
+                    }
+                    playerName = nombre;
                     sendMessage("WELCOME " + playerName);
-                } else if (line.equals("ATTACK") && opponent != null) {
-    synchronized (opponent) {
-        opponent.hp -= 20;
+                } else if (line.startsWith("SELECT_WEAPON:")) {
+                    weapon = line.substring("SELECT_WEAPON:".length());
+                    sendMessage("Arma seleccionada: " + weapon);
+                    System.out.println(playerName + " seleccionó el arma: " + weapon);
+                } else if (line.equals("ATTACK")) {
+                    // Validar que el oponente existe y ambos tienen nombre
+                    if (opponent == null || opponent.getPlayerName() == null || opponent.getPlayerName().isEmpty() || this.playerName == null || this.playerName.isEmpty()) {
+                        sendMessage("No puedes atacar hasta que ambos jugadores estén listos.");
+                        return;
+                    }
+                    // No permitir atacar si la partida terminó
+                    if (opponent.hp <= 0 || this.hp <= 0) {
+                        sendMessage("La partida ya terminó.");
+                        return;
+                    }
+                    synchronized (opponent) {
+                        if (opponent.hp <= 0 || this.hp <= 0) {
+                            sendMessage("La partida ya terminó.");
+                            return;
+                        }
+                        opponent.hp -= 20;
+                        if (opponent.hp < 0) opponent.hp = 0; // No permitir HP negativo
 
-// Aviso al oponente de que recibió daño
-opponent.sendMessage("DAMAGE:20 (HP restante: " + opponent.hp + ")");
+                        // Mensaje para el oponente
+                        opponent.sendMessage(playerName + " te atacó con " + weapon + " (-20 HP, ahora tienes " + opponent.hp + ")");
+                        // Mensaje para el atacante
+                        sendMessage("Atacaste a " + opponent.playerName + " con " + weapon + " (-20 HP, ahora tiene " + opponent.hp + ")");
+                        // Mensaje en consola del servidor
+                        System.out.println(playerName + " atacó a " + opponent.playerName + " con " + weapon + " (-20 HP, " + opponent.playerName + " ahora tiene " + opponent.hp + ")");
 
-// Aviso al atacante de que hizo daño y cuánto HP queda
-sendMessage("Atacaste a " + opponent.playerName + " (-20 HP, ahora tiene " + opponent.hp + ")");
-
-
-
-        if (opponent.hp <= 0) {
-            sendMessage("YOU_WIN");
-            opponent.sendMessage("YOU_LOSE");
-        }
-    }
-}else if (line.equals("STATUS")) {
+                        if (opponent.hp == 0) {
+                            sendMessage("YOU_WIN");
+                            opponent.sendMessage("YOU_LOSE");
+                            System.out.println(playerName + " ha ganado la partida. " + opponent.playerName + " ha perdido.");
+                        }
+                    }
+                } else if (line.equals("STATUS")) {
                     sendMessage("HP:" + hp);
                 } else {
                     sendMessage("UNKNOWN_CMD");
