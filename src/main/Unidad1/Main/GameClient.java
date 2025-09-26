@@ -1,159 +1,104 @@
-package Main;
 
+package Main;
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
 public class GameClient {
-
-    private static final String[] AVAILABLE_CHARACTERS =
-            {"CHIRRETE", "MILITAR", "POLICIA", "GUSTAVO", "PONCHO"};
-
-    private static final String[] AVAILABLE_WEAPONS =
-            {"PISTOLA", "FUSIL", "TEASER", "GARROTE", "PEÑON"};
-
-    public static void main(String[] args) throws IOException {
-        String host = "10.10.10.182"; // Cambia si el server está en otra máquina
-        int port = 5000;
-
-        Socket socket = new Socket(host, port);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+    public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
 
+        // 🔑 Servidor fijo (cámbialo si tu compañero usa otra IP/puerto)
+        String host = "10.10.10.182";
+        int port = 5000;
 
-        Thread reader = new Thread(() -> {
-            try {
-                String s;
-                while ((s = in.readLine()) != null) {
-                    if (s.startsWith("DAMAGE:")) {
-                        // Cuando recibes daño
-                        String[] parts = s.split(":");
-                        if (parts.length >= 4) {
-                            System.out.println("[SERVER] ¡HAS SIDO ATACADO!");
-                            System.out.println("  -> Daño recibido: -" + parts[1] + " (por " + parts[2] + " con " + parts[3] + ")");
-                        } else {
-                            System.out.println("[SERVER] " + s);
-                        }
-                    } else if (s.startsWith("HP_LEFT:")) {
-                        // Vida restante
-                        String hpValue = s.substring(8);
-                        System.out.println("  -> Tu vida actual es: " + hpValue + " HP.");
-                    } else if (s.startsWith("ATTACK_SUCCESS:")) {
-                        // Ataque exitoso (formato esperado)
-                        String damageInfo = s.substring(15);
-                        System.out.println("[SERVER] Ataque exitoso. Daño infligido: " + damageInfo);
-                    } else if (s.startsWith("YOU_ATTACKED:")) {
-                        // ⭐ NUEVO: Procesar mensajes de ataque del servidor actual
-                        String[] parts = s.split(":");
-                        if (parts.length >= 3) {
-                            System.out.println("[SERVER] ¡ATAQUE EXITOSO!");
-                            System.out.println("  -> Daño infligido: " + parts[2] + " al enemigo " + parts[1]);
-                        }
-                    } else if (s.startsWith("YOU_WIN")) {
-                        System.out.println("[SERVER]  ¡HAS GANADO LA BATALLA!");
-                    } else if (s.startsWith("YOU_LOSE")) {
-                        System.out.println("[SERVER]  ¡HAS PERDIDO LA BATALLA!");
-                    } else if (s.startsWith("MATCH_START")) {
-                        System.out.println("[SERVER] ⚔️ " + s);
-                    } else if (s.startsWith("OPPONENT_FOUND:")) {
-                        System.out.println("[SERVER]  " + s);
-                    } else if (s.startsWith("PROFILE_SET:") || s.startsWith("WEAPON_SET:")) {
-                        System.out.println("[SERVER]  " + s);
-                    } else if (s.startsWith("WELCOME")) {
-                        System.out.println("[SERVER]  " + s);
-                    } else if (s.startsWith("ERROR:")) {
-                        System.out.println("[SERVER]  " + s);
-                    } else {
-                        // Muestra todos los demás mensajes
-                        System.out.println("[SERVER] " + s);
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("Conexión con el servidor cerrada.");
-            }
-        });
-        reader.start();
-
-        System.out.println("=== Cliente de la Arena de Guerreros ===");
-        System.out.print("Tu nombre: ");
-        String name = sc.nextLine();
-        out.println("NAME:" + name);
-
-        // Selección de Personaje - CON NÚMEROS
-        System.out.println("\n--- 1. Elige tu Personaje/Clase ---");
-        for (int i = 0; i < AVAILABLE_CHARACTERS.length; i++) {
-            System.out.println((i + 1) + ". " + AVAILABLE_CHARACTERS[i]);
-        }
-        System.out.print("Escribe el número del personaje (1-5): ");
-        String characterChoice = sc.nextLine().trim();
-
-        // Procesar número a nombre del personaje
-        String characterName = processNumberSelection(characterChoice, AVAILABLE_CHARACTERS);
-        out.println("SELECT_WEAPON:" + characterName);
-
-        System.out.println("Esperando confirmación del personaje...");
-
-        // Selección de Arma - CON NÚMEROS
-        System.out.println("\n--- 2. Elige tu Arma ---");
-        for (int i = 0; i < AVAILABLE_WEAPONS.length; i++) {
-            System.out.println((i + 1) + ". " + AVAILABLE_WEAPONS[i]);
-        }
-        System.out.print("Escribe el número del arma (1-5): ");
-        String weaponChoice = sc.nextLine().trim();
-
-        // Procesar número a nombre del arma
-        String weaponName = processNumberSelection(weaponChoice, AVAILABLE_WEAPONS);
-        out.println("SELECT_WEAPON:" + weaponName);
-
-        // Bucle principal de comandos - SIN CAMBIOS
-        while (true) {
-            System.out.print("\nComando (GOLPE(1)/ESTADO(2)/ELEGIR:<personaje>/ARMAR:<arma>/SALIR(3)): ");
-            String cmd = sc.nextLine().trim();
-            String upperCmd = cmd.toUpperCase();
-
-            String serverCommand = "";
-
-            if (upperCmd.equals("3")) {
-                serverCommand = "EXIT";
-                out.println(serverCommand);
-                break;
-            } else if (upperCmd.equals("1")) {
-                serverCommand = "ATTACK";
-                out.println(serverCommand);
-            } else if (upperCmd.equals("2")) {
-                serverCommand = "STATUS";
-                out.println(serverCommand);
-            } else if (upperCmd.startsWith("ELEGIR:")) {
-                String characterNameCmd = cmd.substring(7).trim();
-                serverCommand = "SELECT_WEAPON:" + characterNameCmd;
-                out.println(serverCommand);
-            } else if (upperCmd.startsWith("ARMAR:")) {
-                String weaponNameCmd = cmd.substring(6).trim();
-                serverCommand = "SELECT_WEAPON:" + weaponNameCmd;
-                out.println(serverCommand);
-            } else {
-                System.out.println("Comando desconocido..");
-            }
-        }
-
-        System.out.println("Cerrando conexión...");
-        socket.close();
-        sc.close();
-    }
-
-    private static String processNumberSelection(String input, String[] availableOptions) {
         try {
-            int number = Integer.parseInt(input.trim());
-            if (number >= 1 && number <= availableOptions.length) {
-                return availableOptions[number - 1];
-            } else {
-                System.out.println("Número inválido. Usando: " + input);
-                return input;
+            Socket socket = new Socket(host, port);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+            // Hilo lector para recibir mensajes del servidor
+            Thread reader = new Thread(() -> {
+                try {
+                    String s;
+                    while ((s = in.readLine()) != null) {
+                        if (s.equals("YOU_WIN")) {
+                            System.out.println("\nASI ES QUE ES !! GANASTE!!.");
+                            break;
+                        } else if (s.equals("YOU_LOSE")) {
+                            System.out.println("\n💀 TE MATARON.");
+                            break;
+                        } else {
+                            System.out.println(" " + s);
+                        }
+                    }
+                } catch (IOException e) {
+                    System.out.println("Conexión cerrada.");
+                } finally {
+                    try { socket.close(); } catch (IOException ignored) {}
+                    System.out.println("\n=== Fin de la partida ===");
+                    System.exit(0);
+                }
+            });
+            reader.start();
+
+            // Paso 1: elegir nombre
+            System.out.println("\n=== REGISTRO DE JUGADOR ===");
+            System.out.print("Tu nombre: ");
+            String name = sc.nextLine();
+            out.println("NAME:" + name);
+
+            // Paso 2: elegir arma
+            String[] armas = {"PEÑON", "CHUZO PARA HISCOTEA ", "REVOLVER", "HIERRO CALIENTE"};
+            System.out.println("\n=== SELECCIÓN DE ARMA ===");
+            for (int i = 0; i < armas.length; i++) {
+                System.out.println((i + 1) + ". " + armas[i]);
             }
-        } catch (NumberFormatException e) {
-            // Si no es número, devolver el texto tal cual
-            return input;
-        }
-    }
+            System.out.print("Elige arma (1-" + armas.length + "): ");
+            int choice = sc.nextInt();
+            sc.nextLine(); // limpiar buffer
+            if (choice < 1 || choice > armas.length) {
+                choice = 1; // por defecto "Puños"
+            }
+            String weapon = armas[choice - 1];
+            out.println("SELECT_WEAPON:" + weapon);
+
+            // Paso 3: menú principal
+            System.out.println("\n=== COMANDOS ===");
+            System.out.println("ATTACK(1)- Atacar a tu oponente");
+            System.out.println("STATUS(2)- Ver tu vida");
+            System.out.println("EXIT   - Salir del juego\n");
+
+            while (true)  {
+                System.out.print("Comando: ");
+                String cmd = sc.nextLine().trim().toUpperCase();
+
+                switch (cmd) {
+                    case "1":
+                    case "ATTACK":
+                        out.println("ATTACK");
+                        break;
+
+                    case "2":
+                    case "STATUS":
+                        out.println("STATUS");
+                        break;
+
+                    case "3":
+                    case "EXIT":
+                        out.println("EXIT");
+                        sc.close();
+                        return; // salir del while y cerrar cliente
+
+                    default:
+                        System.out.println("Comando no válido. Usa A, S, E o ATTACK, STATUS, EXIT.");
+                        break;
+                }
+
+            }
+
+
+        } catch (IOException e) {
+            System.out.println("Error conectando al servidor: " + e.getMessage());
+ }}
 }
