@@ -48,11 +48,16 @@ public class ClientHandler extends Thread {
     private int hp; // HP será dinámico según el personaje
     private ServerWeapon playerWeapon; // Arma/daño dinámico
 
+
+    // En tu ClientHandler.java, agrega este método:
+    public String getPlayerName() {
+        return playerName != null ? playerName : "Jugador";
+    }
     // ⚔️ MAPEO DE PERSONAJES Y SUS ESTADÍSTICAS (HP y Arma) ⚔️
     private static final Map<String, CharacterProfile> CHARACTER_PROFILES = new HashMap<>();
     static {
         // Los nombres de las claves deben coincidir con los que envía el cliente (en mayúsculas)
-        CHARACTER_PROFILES.put("NIÑO DE 14 AÑOS", new CharacterProfile("Puño Default", 15, 60));
+        CHARACTER_PROFILES.put("CHIRRETE", new CharacterProfile("Puño Default", 15, 60));
         CHARACTER_PROFILES.put("MILITAR", new CharacterProfile("Fusil ", 25, 200));
         CHARACTER_PROFILES.put("POLICIA", new CharacterProfile("Pistola", 20, 200));
         CHARACTER_PROFILES.put("GUSTAVO", new CharacterProfile("Garrote", 17, 200));
@@ -74,9 +79,6 @@ public class ClientHandler extends Thread {
         this.socket = socket;
         this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.out = new PrintWriter(socket.getOutputStream(), true);
-
-        // Inicializar con un personaje por defecto (necesario para que 'hp' y 'playerWeapon' no sean null)
-        setPlayerProfile("NIÑO DE 14 AÑOS");
     }
 
     public void setOpponent(ClientHandler opp) {
@@ -113,7 +115,7 @@ public class ClientHandler extends Thread {
             return;
         }
 
-        sendMessage("UNKNOWN_PROFILE:" + profileOrWeapon + ". Intenta con un personaje o arma válida.");
+
     }
 
 
