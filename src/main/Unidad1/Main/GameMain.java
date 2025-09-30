@@ -137,3 +137,7 @@ class Enemy extends Thread {
         System.out.println(name + " ya termino sus ataques.");
     }
 }
+
+
+
+/////hasta este momento este proyecto de el juego antes de la programacion fucional
